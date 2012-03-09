@@ -10,5 +10,5 @@ PYTHONPATH="${PYTHONPATH}:${BIBMAN_ROOT}/lib/python"
 
 export PYTHONPATH
 
-exec "${BIBMAN_ROOT}/lib/python/bibman/main.py" $*
+exec "${BIBMAN_ROOT}/lib/python/bibman/main.py" "$@"
 

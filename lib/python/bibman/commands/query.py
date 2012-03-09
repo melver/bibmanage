@@ -48,7 +48,7 @@ def main(args):
         if args.index == bibtex_format.KEYWORDS:
             # Perform query
             query_result = set()
-            for value_or in " ".join(args.value).split("+"):
+            for value_or in args.value:
                 last_result = None
                 for value_and in value_or.split(","):
                     this_result = bibfmt.query(args.index, value_and) or []
@@ -96,7 +96,7 @@ def register_args(parser):
                 ",".join(AVAIL_INDICES)))
     parser.add_argument(type=str,
             dest="value", nargs="+",
-            help="Query value. 'Or' semantics with '+', 'and' semantics with ','.")
+            help="Query value. 'Or' semantics for space separated arguments, 'and' semantics with ',' within one argument.")
     parser.add_argument("-c", "--copy", metavar="PATH", type=str,
             dest="copy", default=None,
             help="Copy associated files to PATH.")
