@@ -46,36 +46,46 @@ def main(args):
         bibfmt.build_index(args.index)
 
         if args.index == bibtex_format.KEYWORDS:
-            for value in " ".join(args.value).split(","):
-                query_result = bibfmt.query(args.index, value)
-                print(query_result)
-                if query_result is None:
-                    logging.info("No matches.")
-                else:
-                    for filepos in query_result:
-                        if args.copy is not None:
-                            if not os.path.isdir(args.copy):
-                                logging.critical("Not a valid path: {}".format(args.copy))
-                                return 1
+            # Perform query
+            query_result = set()
+            for value_or in " ".join(args.value).split("+"):
+                last_result = None
+                for value_and in value_or.split(","):
+                    this_result = bibfmt.query(args.index, value_and) or []
+                    if last_result is None:
+                        last_result = set(this_result)
+                    else:
+                        last_result &= frozenset(this_result)
+                query_result |= last_result
 
-                            querydict = bibfmt.read_entry_dict(filepos)
-                            filepath = querydict["file"]
+            # Show results
+            if len(query_result) == 0:
+                logging.info("No matches.")
+            else:
+                for filepos in query_result:
+                    if args.copy is not None:
+                        if not os.path.isdir(args.copy):
+                            logging.critical("Not a valid path: {}".format(args.copy))
+                            return 1
 
-                            if args.rename:
-                                newname = "".join([querydict["refname"],
-                                    "__",
-                                    querydict["title"][:30].replace(" ", "_").split(":")[0],
-                                    ".",
-                                    filepath.split(".")[-1] # extension
-                                    ])
-                                destpath = os.path.join(args.copy, newname)
-                            else:
-                                destpath = args.copy
+                        querydict = bibfmt.read_entry_dict(filepos)
+                        filepath = querydict["file"]
 
-                            logging.info("Copying: '{}' to '{}'".format(filepath, destpath))
-                            shutil.copy(os.path.expanduser(filepath), destpath)
+                        if args.rename:
+                            newname = "".join([querydict["refname"],
+                                "__",
+                                querydict["title"][:30].replace(" ", "_").split(":")[0],
+                                ".",
+                                filepath.split(".")[-1] # extension
+                                ])
+                            destpath = os.path.join(args.copy, newname)
                         else:
-                            print(bibfmt.read_entry_raw(filepos))
+                            destpath = args.copy
+
+                        logging.info("Copying: '{}' to '{}'".format(filepath, destpath))
+                        shutil.copy(os.path.expanduser(filepath), destpath)
+                    else:
+                        print(bibfmt.read_entry_raw(filepos))
     finally:
         bibfile.close()
 
@@ -86,7 +96,7 @@ def register_args(parser):
                 ",".join(AVAIL_INDICES)))
     parser.add_argument(type=str,
             dest="value", nargs="+",
-            help="Query value.")
+            help="Query value. 'Or' semantics with '+', 'and' semantics with ','.")
     parser.add_argument("-c", "--copy", metavar="PATH", type=str,
             dest="copy", default=None,
             help="Copy associated files to PATH.")
