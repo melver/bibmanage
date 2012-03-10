@@ -33,6 +33,7 @@ import logging
 KEYWORDS = "keywords"
 FILE     = "file"
 HASH     = "md5"
+REFNAME  = "refname"
 
 # The '.' after closing '}', is a simple way to enable folding in your
 # favorite editor. Folding tags would be '@,}.' .
@@ -108,6 +109,19 @@ class BibFmt:
             if line.startswith("@"):
                 valid_entry = True
                 last_entry_pos = line_begin_pos
+
+                if REFNAME in toindex:
+                    braces = line.index("{")
+                    comma = line.index(",")
+
+                    refname = line[braces+1:comma]
+                    if self.index[REFNAME].get(refname) is None:
+                        self.index[REFNAME][refname] = [last_entry_pos]
+                    else:
+                        self.index[REFNAME][refname].append(last_entry_pos)
+                        logging.warn("Duplicate cite-key found in {}: {}".format(
+                            self.bibfile.name, refname))
+
             elif line == "}.\n" or line == "}\n":
                 valid_entry = False
 

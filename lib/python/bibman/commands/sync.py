@@ -26,6 +26,7 @@ import logging
 import os
 import datetime
 import shutil
+import string
 
 from bibman.util import gen_hash_md5, gen_filename_from_bib
 
@@ -34,7 +35,7 @@ class SyncCommand:
         self.conf = conf
         self.bibfmt_main = bibfmt_module.BibFmt(bibfile)
 
-        indices = [bibfmt_module.FILE]
+        indices = [bibfmt_module.FILE, bibfmt_module.REFNAME]
         if self.conf.args.hash:
             indices.append(bibfmt_module.HASH)
 
@@ -150,6 +151,15 @@ class SyncCommand:
                 shutil.move(os.path.expanduser(path), os.path.expanduser(newpath))
                 new_entry_args["file"] = newpath
                 path = newpath
+
+            # Before we add the new entry, check for duplicate cite-keys
+            if new_entry_args["refname"] in self.bibfmt_main.index[bibfmt_module.REFNAME]:
+                logging.debug("Cite-key already exists: {}".format(new_entry_args["refname"]))
+                for c in string.ascii_letters:
+                    newrefname = new_entry_args["refname"] + c
+                    if newrefname not in self.bibfmt_main.index[bibfmt_module.REFNAME]:
+                        break
+                new_entry_args["refname"] = newrefname
 
             # Finally, generate new entry
 

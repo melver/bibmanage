@@ -28,6 +28,7 @@ import hashlib
 import random
 import logging
 from html.entities import name2codepoint
+import string
 
 from bibman.formats import bibtex as bibtex_format
 
@@ -107,7 +108,16 @@ def remote_fetch(**kwargs):
         except:
             choice = 0
 
-        return bibtex_format.convert_to_dict(result[choice])
+        bibdict = bibtex_format.convert_to_dict(result[choice])
+
+        # Make refname look like this: Author1234
+        # First check if there are any digits in the string
+        if len(frozenset(string.digits) & frozenset(bibdict["refname"])) != 0:
+            bibdict["refname"] = bibdict["refname"].rstrip(string.ascii_letters)
+        # Capitalise first letter
+        bibdict["refname"] = bibdict["refname"].capitalize()
+
+        return bibdict
     else:
         return {}
 
