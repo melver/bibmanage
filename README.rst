@@ -10,5 +10,10 @@ Currently supported formats: BibTeX
 
 Dependencies
 ------------
-* Python 3; some of the code may work with Python 2.7 or later (untested).
+* Python 3! Some of the code may work with Python 2.7 or later (untested).
+
+Optional Dependencies
+---------------------
+
+* pdftotext: for fetching bibliography info online.
 
