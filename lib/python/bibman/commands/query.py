@@ -26,32 +26,34 @@ import logging
 import os
 import shutil
 
-import bibman.formats.bibtex as bibtex_format
+from bibman.util import gen_filename
 
-AVAIL_INDICES = [bibtex_format.KEYWORDS]
+def main(conf):
+    bibfmt_module = conf.bibfmt_module
+    AVAIL_INDICES = [bibfmt_module.KEYWORDS]
 
-def main(args):
-    if not args.index in AVAIL_INDICES:
-        logging.critical("Not a valid choice: {}".format(args.index))
+    if not conf.args.index in AVAIL_INDICES:
+        logging.critical("Not a valid choice: {}. Available options are: {}".format(conf.args.index,
+            ",".join(AVAIL_INDICES)))
         return 1
 
     try:
-        bibfile = open(args.bibfile, 'r')
+        bibfile = open(conf.args.bibfile, 'r')
     except Exception as e:
         logging.critical("Could not open file: {}".format(e))
         return 1
 
     try:
-        bibfmt = bibtex_format.BibFmt(bibfile)
-        bibfmt.build_index(args.index)
+        bibfmt = bibfmt_module.BibFmt(bibfile)
+        bibfmt.build_index(conf.args.index)
 
-        if args.index == bibtex_format.KEYWORDS:
+        if conf.args.index == bibfmt_module.KEYWORDS:
             # Perform query
             query_result = set()
-            for value_or in args.value:
+            for value_or in conf.args.value:
                 last_result = None
                 for value_and in value_or.split(","):
-                    this_result = bibfmt.query(args.index, value_and) or []
+                    this_result = bibfmt.query(conf.args.index, value_and) or []
                     if last_result is None:
                         last_result = set(this_result)
                     else:
@@ -63,24 +65,19 @@ def main(args):
                 logging.info("No matches.")
             else:
                 for filepos in query_result:
-                    if args.copy is not None:
-                        if not os.path.isdir(args.copy):
-                            logging.critical("Not a valid path: {}".format(args.copy))
+                    if conf.args.copy is not None:
+                        if not os.path.isdir(conf.args.copy):
+                            logging.critical("Not a valid path: {}".format(conf.args.copy))
                             return 1
 
                         querydict = bibfmt.read_entry_dict(filepos)
                         filepath = querydict["file"]
 
-                        if args.rename:
-                            newname = "".join([querydict["refname"],
-                                "__",
-                                querydict["title"][:30].replace(" ", "_").split(":")[0],
-                                ".",
-                                filepath.split(".")[-1] # extension
-                                ])
-                            destpath = os.path.join(args.copy, newname)
+                        if conf.args.rename:
+                            destpath = os.path.join(conf.args.copy,
+                                    gen_filename(querydict))
                         else:
-                            destpath = args.copy
+                            destpath = conf.args.copy
 
                         logging.info("Copying: '{}' to '{}'".format(filepath, destpath))
                         shutil.copy(os.path.expanduser(filepath), destpath)
@@ -91,9 +88,8 @@ def main(args):
 
 def register_args(parser):
     parser.add_argument("-i", "--index", type=str,
-            dest="index", required=True,
-            help="Index to query. [Availble:{}]".format(
-                ",".join(AVAIL_INDICES)))
+            dest="index", default="keywords",
+            help="Index to query. [Default:keywords]")
     parser.add_argument(type=str,
             dest="value", nargs="+",
             help="Query value. 'Or' semantics for space separated arguments, 'and' semantics with ',' within one argument.")

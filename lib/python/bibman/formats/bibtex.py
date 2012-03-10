@@ -24,7 +24,11 @@
 # @author Marco Elver <me AT marcoelver.com>
 # @date Thu Mar  8 22:34:37 GMT 2012
 
+# TODO: Use proper BibTeX parser for this?
+
 from string import Template
+import pprint
+import logging
 
 KEYWORDS = "keywords"
 FILE     = "file"
@@ -35,13 +39,46 @@ HASH     = "md5"
 TEMPLATE_PLAIN = Template("""@${reftype}{${refname},
   author = {${author}},
   title = {${title}},
-  year = {${year}},
+  year = {${year}},${extra_top}
   keywords = {${keywords}},
-  file = {${file}},${extra}
-  annotation = {{}},
+  file = {${file}},${extra_bottom}
+  annotation = {{${annotation}}},
   date-added = {${date_added}}
 }.
 """)
+
+TEMPLATE_TOP_ALLOW = ["journal", "number", "pages", "publisher", "volume"]
+TEMPLATE_BOTTOM_ALLOW = ["md5"]
+
+def convert_to_dict(entry_string):
+    if entry_string[0] != "@": return {}
+
+    try:
+        braces = entry_string.index("{")
+        comma = entry_string.index(",")
+
+        result = {}
+        result["reftype"] = entry_string[1:braces]
+        result["refname"] = entry_string[braces+1:comma]
+
+        entry_string = entry_string[comma+1:].strip(". \n{}")
+        elements = entry_string.split("},")
+        if len(elements) == 1:
+            entry_string.split("\",")
+
+        for element in elements:
+            key_val = element.split("=")
+            result[key_val[0].strip()] = key_val[1].strip(" \n{}\"")
+
+        if logging.getLogger().isEnabledFor(logging.DEBUG):
+            pp = pprint.PrettyPrinter(indent=4)
+            logging.debug("(formats/bibtex:convert_to_dict) result =\n{}".format(
+                pp.pformat(result)))
+
+        return result
+    except Exception as e:
+        logging.error("(formats/bibtex) convert_to_dict: {}".format(e))
+        return {}
 
 class BibFmt:
     def __init__(self, bibfile, template=TEMPLATE_PLAIN):
@@ -124,60 +161,57 @@ class BibFmt:
 
     def read_entry_dict(self, filepos):
         self.bibfile.seek(filepos, 0)
-        result = {}
+        entry_lines = []
+
         while True:
             line = self.bibfile.readline()
             if len(line) == 0: break
+
+            entry_lines.append(line.strip())
+
             if line == "}.\n" or line == "}\n": break
 
-            line = line.strip()
-            if line.startswith("@"):
-                tmp = line.split("{")
-                result["reftype"] = tmp[0].lstrip("@")
-                result["refname"] = tmp[1].rstrip(", \n")
-            elif line.startswith("author"):
-                result["author"] = line.split("=")[1].strip("{}, ")
-            elif line.startswith("title"):
-                result["title"] = line.split("=")[1].strip("{}, ")
-            elif line.startswith("year"):
-                result["year"] = line.split("=")[1].strip("{}, ")
-            elif line.startswith("keywords"):
-                result["keywords"] = line.split("=")[1].strip("{}, ").split(",")
-            elif line.startswith("file"):
-                result["file"] = line.split("=")[1].strip("{}, ")
-            elif line.startswith("date-added"):
-                result["date_added"] = line.split("=")[1].strip("{}, ")
-            elif line.startswith("md5"):
-                result["md5"] = line.split("=")[1].strip("{}, ")
-
-        return result
+        return convert_to_dict("".join(entry_lines))
 
     def _process_extra(self, kwargs):
-        extra_strings = []
+        # Add optional top information
+        extra_top_strings = []
+
+        for item in TEMPLATE_TOP_ALLOW:
+            if item in kwargs:
+                extra_top_strings.append("\n  {} = {{{}}},".format(
+                    item.replace("_", "-"), kwargs[item]))
+
+        kwargs["extra_top"] = "".join(extra_top_strings)
+
+        # Add bottom information
+        extra_bottom_strings = []
 
         # pad file entry, so future file moves can be facilitated
         file_padding = 128 - len(kwargs["file"])
         if file_padding > 0:
-            extra_strings.append("".ljust(file_padding))
+            extra_bottom_strings.append("".ljust(file_padding))
 
-        if "md5" in kwargs:
-            extra_strings.append("\n  md5 = {{{}}},".format(kwargs["md5"]))
-            del kwargs["md5"]
+        for item in TEMPLATE_BOTTOM_ALLOW:
+            if item in kwargs:
+                extra_bottom_strings.append("\n  {} = {{{}}},".format(
+                    item.replace("_", "-"), kwargs[item]))
 
-        kwargs["extra"] = "".join(extra_strings)
+        kwargs["extra_bottom"] = "".join(extra_bottom_strings)
         return kwargs
 
     def print_new_entry(self, **kwargs):
-        print(self.template.substitute(**self._process_extra(kwargs)))
+        print(self.template.safe_substitute(**self._process_extra(kwargs)))
 
     def append_new_entry(self, **kwargs):
         # seek to end
         self.bibfile.seek(0, 2)
-        self.bibfile.write(self.template.substitute(**self._process_extra(kwargs)))
+        self.bibfile.write(self.template.safe_substitute(**self._process_extra(kwargs)))
         self.bibfile.write("\n")
 
     def update_in_place(self, filepos, key, old_val, value):
         self.bibfile.seek(filepos, 0)
+
         while True:
             start_line_pos = self.bibfile.tell()
             line = self.bibfile.readline()

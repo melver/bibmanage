@@ -25,29 +25,29 @@
 import logging
 import os
 import datetime
-import hashlib
+import shutil
 
-import bibman.formats.bibtex as bibtex_format
+from bibman.util import gen_hash_md5, gen_filename
 
 class SyncCommand:
-    def __init__(self, args, bibfile, excludefiles):
-        self.args = args
-        self.bibfmt_main = bibtex_format.BibFmt(bibfile)
+    def __init__(self, conf, bibfile, excludefiles):
+        self.conf = conf
+        self.bibfmt_main = bibfmt_module.BibFmt(bibfile)
 
-        indices = [bibtex_format.FILE]
-        if self.args.hash:
-            indices.append(bibtex_format.HASH)
+        indices = [bibfmt_module.FILE]
+        if self.conf.args.hash:
+            indices.append(bibfmt_module.HASH)
 
         self.bibfmt_main.build_index(*indices)
 
         self.bibfmt_efs = []
         for fh in excludefiles:
-            bi = bibtex_format.BibFmt(fh)
+            bi = bibfmt_module.BibFmt(fh)
             bi.build_index(*indices)
             self.bibfmt_efs.append(bi)
 
     def walk_path(self):
-        for path in self.args.paths:
+        for path in self.conf.args.paths:
             if not os.path.isdir(path):
                 logging.error("Could not find directory: {}".format(path))
                 continue
@@ -58,21 +58,63 @@ class SyncCommand:
                     if fullpath.startswith(os.environ['HOME']):
                         fullpath = fullpath.replace(os.environ['HOME'], "~", 1)
 
-                    if fullpath.split(".")[-1] in self.args.extlist:
+                    if fullpath.split(".")[-1] in self.conf.args.extlist:
                         yield fullpath
+
+    def check_hash(self, digest, path):
+        found = False
+
+        for bi in [self.bibfmt_main] + self.bibfmt_efs:
+            if digest in bi.index[bibfmt_module.HASH]:
+                found = True
+                query_filepos = bi.query(bibfmt_module.HASH, digest)
+                query_result = bi.read_entry_dict(query_filepos)
+                duplicate = query_result["file"]
+                refname = query_result["refname"]
+
+                logging.warn("Duplicate for '{}' found in: '{}', refname: '{}'".format(
+                    path, bi.bibfile.name, refname
+                    ))
+
+                if not os.path.exists(duplicate) and bi.bibfile.writable():
+                    if not self.conf.args.append or not bi.update_in_place(query_filepos,
+                            bibfmt_module.FILE, duplicate, path):
+                        logging.warn("File '{}' does not exist anymore, suggested fix: update entry '{}' in '{}' with '{}'.\n".format(
+                            duplicate, refname, bi.bibfile.name, path))
+                    else:
+                        # Could update in-place
+                        logging.info("Updated entry for '{}'.".format(
+                                    refname))
+
+        return found
+
+    def interactive_corrections(self, new_entry_args):
+        logging.info("Entering interactive corrections mode. Leave blank for default.")
+        self.bibfmt_main.print_new_entry(**new_entry_args)
+
+        for key in new_entry_args:
+            if key in ["file", "date_added", "md5"]:
+                continue
+
+            user_data = input("'{}' correction: ".format(key))
+            if len(user_data) > 0:
+                new_entry_args[key] = user_data
+
+        print()
+
+        return new_entry_args
 
     def __call__(self):
         for path in self.walk_path():
             # Check existing entries
             found = False
             for bi in [self.bibfmt_main] + self.bibfmt_efs:
-                if path in bi.index[bibtex_format.FILE]:
+                if path in bi.index[bibfmt_module.FILE]:
                     found = True
                     break
             if found: continue
 
             # Generate new entry
-
             new_entry_args = dict(
                     reftype="misc",
                     refname="TODO:{}".format(os.path.basename(path)),
@@ -81,69 +123,57 @@ class SyncCommand:
                     year="",
                     keywords="",
                     file=path,
+                    annotation="",
                     date_added=datetime.date.today().strftime("%Y-%m-%d"))
 
-            if self.args.hash:
-                md5 = hashlib.md5()
-                with open(os.path.expanduser(path), "rb") as f:
-                    f.seek(0, 2)
-                    fsize = f.tell()
-                    f.seek(0, 0)
-
-                    while f.tell() != fsize:
-                        md5.update(f.read(128))
-                new_entry_args["md5"] = md5.hexdigest()
+            if self.conf.args.hash:
+                new_entry_args["md5"] = gen_hash_md5(
+                        os.path.expanduser(path)).hexdigest()
 
                 # Before we proceed, check if this file is a duplicate of an
                 # already existing file, and if so, check existing entry is
                 # still valid; if not valid replace file otherwise, warn user.
-                found = False
-                for bi in [self.bibfmt_main] + self.bibfmt_efs:
-                    if new_entry_args["md5"] in bi.index[bibtex_format.HASH]:
-                        found = True
-                        query_result = bi.query(bibtex_format.HASH, new_entry_args["md5"])
-                        duplicate = bi.read_entry_dict(query_result)["file"]
-                        refname = bi.read_entry_dict(query_result)["refname"]
+                if self.check_hash(new_entry_args["md5"], path):
+                    continue
 
-                        logging.warn("Duplicate for '{}' found in: '{}', refname: '{}'".format(
-                            path, bi.bibfile.name, refname
-                            ))
+            if self.conf.args.remote:
+                new_entry_args.update(self.conf.bibfetch(filename=path))
 
-                        if not os.path.exists(duplicate) and bi.bibfile.writable():
-                            if not self.args.append or not bi.update_in_place(query_result,
-                                    bibtex_format.FILE, duplicate, path):
-                                logging.warn("File '{}' does not exist anymore, suggested fix: update entry '{}' in '{}' with '{}'.\n".format(
-                                    duplicate, refname, bi.bibfile.name, path))
-                            else:
-                                # Could update in-place
-                                logging.info("Updated entry for '{}'.".format(
-                                            refname))
+            if self.conf.args.interactive:
+                new_entry_args = self.interactive_corrections(new_entry_args)
 
-                # Do not write
-                if found: continue
+            if self.conf.args.interactive and self.conf.args.rename:
+                newpath = os.path.join(os.path.dirname(path), gen_filename(new_entry_args))
+                logging.info("Rename: {} to {}".format(path, newpath))
+                shutil.move(os.path.expanduser(path), os.path.expanduser(newpath))
+                new_entry_args["file"] = newpath
+                path = newpath
 
             # Finally, generate new entry
 
-            if self.args.append:
+            if self.conf.args.append:
                 logging.info("Appending new entry for: {}".format(path))
                 self.bibfmt_main.append_new_entry(**new_entry_args)
             else:
                 self.bibfmt_main.print_new_entry(**new_entry_args)
 
-def main(args):
+def main(conf):
+    global bibfmt_module
+    bibfmt_module = conf.bibfmt_module
+
     try:
-        bibfile = open(args.bibfile, 'r+')
+        bibfile = open(conf.args.bibfile, 'r+')
 
         excludefiles = []
-        if args.excludes is not None:
-            for filename in args.excludes:
+        if conf.args.excludes is not None:
+            for filename in conf.args.excludes:
                 excludefiles.append(open(filename, "r"))
     except Exception as e:
         logging.critical("Could not open file: {}".format(e))
         return 1
 
     try:
-        sync_cmd = SyncCommand(args, bibfile, excludefiles)
+        sync_cmd = SyncCommand(conf, bibfile, excludefiles)
         sync_cmd()
     finally:
         bibfile.close()
@@ -162,9 +192,18 @@ def register_args(parser):
             help="Append to BIBFILE instead of printing to stdout.")
     parser.add_argument("-e", "--exclude", metavar="EXCLUDE", type=str,
             dest="excludes", default=None, nargs="+",
-            help="BibTeX files to exclude new entries from.")
+            help="Bibliography files to exclude new entries from.")
     parser.add_argument("--nohash", action="store_false",
             dest="hash", default=True,
             help="Do not generate MD5 sums and check duplicates.")
+    parser.add_argument("-i", "--interactive", action="store_true",
+            dest="interactive", default=False,
+            help="Interactive synchronisation, prompting the user for entry corrections.")
+    parser.add_argument("--remote", action="store_true",
+            dest="remote", default=False,
+            help="Enable remote fetching of bibliography entries.")
+    parser.add_argument("--rename", action="store_true",
+            dest="rename", default=False,
+            help="Only valid with --interactive: rename file to be more descriptive.")
     parser.set_defaults(func=main)
 

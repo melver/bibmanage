@@ -27,6 +27,7 @@ import argparse
 import time
 import logging
 
+from bibman.bibfetch import frontend as bibfetch_frontend
 from bibman.commands import sync, query
 
 class BibmanConfig:
@@ -40,28 +41,41 @@ class BibmanConfig:
         parser.add_argument("--loglevel", metavar="LEVEL", type=str,
                 dest="loglevel", default="INFO",
                 help="Loglevel (DEBUG, INFO, WARNING, ERROR, CRITICAL). [Default:INFO]")
+        parser.add_argument("--format", metavar="FORMAT", type=str,
+                dest="format", default="bibtex",
+                help="Bibliography format. [Default:bibtex]")
+        parser.add_argument("--fetch-prio", metavar="PRIOLIST", type=str,
+                dest="fetch_prio_list", default=["gscholar"], nargs="+",
+                help="Priority list of fetching engines to use.")
         parser.add_argument("-b", "--bibfile", metavar="BIBFILE", type=str,
                 dest="bibfile", required=True,
-                help="BibTeX file to work with.")
+                help="Bibliograpy file to work with.")
 
         # Add subparsers
         subparsers = parser.add_subparsers(
                 title="Commands",
-                description="Available commands to manage BibTeX files.",
+                description="Available commands to manage bibliography files.",
                 help="Summary"
                 )
 
         parser_sync = subparsers.add_parser("sync", aliases=["s"],
-                help="Synchronise BibTeX file with path.")
+                help="Synchronise bibliography file with path.")
         sync.register_args(parser_sync)
 
         parser_query = subparsers.add_parser("query", aliases=["q"],
-                help="Query BibTeX file.")
+                help="Query bibliography file.")
         query.register_args(parser_query)
 
         # Parse args and setup logging
         self.args = parser.parse_args()
         self._setup_logging()
+
+        # Get the format module
+        self.bibfmt_module = __import__("bibman.formats.{}".format(self.args.format),
+                fromlist=["*"])
+
+        # Setup the remote fetching engine
+        self.bibfetch = bibfetch_frontend.Frontend(self.args)
 
     def _setup_logging(self):
         """
@@ -80,10 +94,15 @@ class BibmanConfig:
 def main(argv):
     # Initialize
     the_time = time.time()
-    bibman_config = BibmanConfig()
+
+    try:
+        bibman_config = BibmanConfig()
+    except ImportError as e:
+        logging.critical("{}".format(e))
+        return 1
 
     # Run the command
-    result = bibman_config.args.func(bibman_config.args)
+    result = bibman_config.args.func(bibman_config)
 
     logging.info("All done in {:.2f} sec!".format(time.time() - the_time))
     return result
