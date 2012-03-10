@@ -27,7 +27,7 @@ import os
 import datetime
 import shutil
 
-from bibman.util import gen_hash_md5, gen_filename
+from bibman.util import gen_hash_md5, gen_filename_from_bib
 
 class SyncCommand:
     def __init__(self, conf, bibfile, excludefiles):
@@ -137,13 +137,15 @@ class SyncCommand:
                     continue
 
             if self.conf.args.remote:
+                logging.info("Attempting to fetch bibliography information remotely: {}".format(
+                    path))
                 new_entry_args.update(self.conf.bibfetch(filename=path))
 
             if self.conf.args.interactive:
                 new_entry_args = self.interactive_corrections(new_entry_args)
 
             if self.conf.args.interactive and self.conf.args.rename:
-                newpath = os.path.join(os.path.dirname(path), gen_filename(new_entry_args))
+                newpath = os.path.join(os.path.dirname(path), gen_filename_from_bib(new_entry_args))
                 logging.info("Rename: {} to {}".format(path, newpath))
                 shutil.move(os.path.expanduser(path), os.path.expanduser(newpath))
                 new_entry_args["file"] = newpath

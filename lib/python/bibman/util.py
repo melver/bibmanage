@@ -23,6 +23,9 @@
 # @date Fri Mar  9 19:32:58 GMT 2012
 
 import hashlib
+import string
+
+FILENAME_VALID_CHARS = frozenset("-_(). {}{}".format(string.ascii_letters, string.digits))
 
 def gen_hash_md5(path):
     md5 = hashlib.md5()
@@ -37,18 +40,18 @@ def gen_hash_md5(path):
 
     return md5
 
-def gen_filename(bibdict):
+def gen_filename_from_bib(bibdict):
     # If the title has a : in it, I assume it's in the TITLE:MOREDESCRIPTIVETITLE format.
     # We can exploit this to get a shorter filename.
-    title = bibdict["title"][:30].replace(" ", "_").split(":")[0]
+    title = bibdict["title"][:35].split(":")[0].replace(" ", "_")
 
     filename = "".join(
             [bibdict["refname"],
-            "--",
+            "-",
             title,
             ".",
             bibdict["file"].split(".")[-1] # extension
         ])
 
-    return filename
+    return ''.join(c for c in filename if c in FILENAME_VALID_CHARS)
 

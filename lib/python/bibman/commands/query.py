@@ -26,7 +26,7 @@ import logging
 import os
 import shutil
 
-from bibman.util import gen_filename
+from bibman.util import gen_filename_from_bib
 
 def main(conf):
     bibfmt_module = conf.bibfmt_module
@@ -75,7 +75,7 @@ def main(conf):
 
                         if conf.args.rename:
                             destpath = os.path.join(conf.args.copy,
-                                    gen_filename(querydict))
+                                    gen_filename_from_bib(querydict))
                         else:
                             destpath = conf.args.copy
 

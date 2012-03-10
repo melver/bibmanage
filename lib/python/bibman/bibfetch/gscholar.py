@@ -86,6 +86,8 @@ def get_links(html):
 
 def remote_fetch(**kwargs):
     if "textsearch" in kwargs:
+        print("Google scholar results:\n")
+
         result = query(kwargs["textsearch"])
         for i in range(len(result)):
             print("===== RESULT [{}]: =====".format(i+1))
