@@ -91,14 +91,19 @@ def remote_fetch(**kwargs):
             print("===== RESULT [{}]: =====".format(i+1))
             print(result[i])
             print()
+
+        choice = input("Which result? Number [Default: skip]: ")
+        print()
+
+        if len(choice) == 0:
+            return {}
+
         try:
-            choice = int(input("Which result? Number [Default: 1]: ")) - 1
+            choice = int(choice) - 1
             if choice < 0 or choice >= len(result):
                 raise
         except:
             choice = 0
-
-        print()
 
         return bibtex_format.convert_to_dict(result[choice])
     else:
