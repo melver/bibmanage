@@ -104,7 +104,7 @@ class BibFmt:
         line_begin_pos = 0
 
         for line in self.bibfile:
-            line_len = len(line)
+            line_len = len(line.encode()) # of encoded line, so we can get offset
 
             if line.startswith("@"):
                 valid_entry = True
