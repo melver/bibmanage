@@ -62,30 +62,46 @@ class SyncCommand:
                     if fullpath.split(".")[-1] in self.conf.args.extlist:
                         yield fullpath
 
+    def query_exists_in(self, index, value):
+        """
+        Generates all found matches.
+        """
+        for bi in [self.bibfmt_main] + self.bibfmt_efs:
+            if value in bi.index[index]:
+                yield bi
+
+    def query_exists(self, *args, **kwargs):
+        """
+        Returns first found match only.
+        """
+        for bi in self.query_exists_in(*args, **kwargs):
+            return bi
+        return None
+
     def check_hash(self, digest, path):
         found = False
 
-        for bi in [self.bibfmt_main] + self.bibfmt_efs:
-            if digest in bi.index[bibfmt_module.HASH]:
-                found = True
-                query_filepos = bi.query(bibfmt_module.HASH, digest)
-                query_result = bi.read_entry_dict(query_filepos)
-                duplicate = query_result["file"]
-                refname = query_result["refname"]
+        for bi in self.query_exists_in(bibfmt_module.HASH, digest):
+            found = True
 
-                logging.warn("Duplicate for '{}' found in: '{}', refname: '{}'".format(
-                    path, bi.bibfile.name, refname
-                    ))
+            query_filepos = bi.query(bibfmt_module.HASH, digest)
+            query_result = bi.read_entry_dict(query_filepos)
+            duplicate = query_result["file"]
+            refname = query_result["refname"]
 
-                if not os.path.exists(duplicate) and bi.bibfile.writable():
-                    if not self.conf.args.append or not bi.update_in_place(query_filepos,
-                            bibfmt_module.FILE, duplicate, path):
-                        logging.warn("File '{}' does not exist anymore, suggested fix: update entry '{}' in '{}' with '{}'.\n".format(
-                            duplicate, refname, bi.bibfile.name, path))
-                    else:
-                        # Could update in-place
-                        logging.info("Updated entry for '{}'.".format(
-                                    refname))
+            logging.warn("Duplicate for '{}' found in: '{}', refname: '{}'".format(
+                path, bi.bibfile.name, refname
+                ))
+
+            if not os.path.exists(duplicate) and bi.bibfile.writable():
+                if not self.conf.args.append or not bi.update_in_place(query_filepos,
+                        bibfmt_module.FILE, duplicate, path):
+                    logging.warn("File '{}' does not exist anymore, suggested fix: update entry '{}' in '{}' with '{}'.\n".format(
+                        duplicate, refname, bi.bibfile.name, path))
+                else:
+                    # Could update in-place
+                    logging.info("Updated entry for '{}'.".format(
+                                refname))
 
         return found
 
@@ -108,12 +124,7 @@ class SyncCommand:
     def __call__(self):
         for path in self.walk_path():
             # Check existing entries
-            found = False
-            for bi in [self.bibfmt_main] + self.bibfmt_efs:
-                if path in bi.index[bibfmt_module.FILE]:
-                    found = True
-                    break
-            if found: continue
+            if self.query_exists(bibfmt_module.FILE, path) is not None: continue
 
             # Generate new entry
             new_entry_args = dict(
@@ -153,11 +164,14 @@ class SyncCommand:
                 path = newpath
 
             # Before we add the new entry, check for duplicate cite-keys
-            if new_entry_args["refname"] in self.bibfmt_main.index[bibfmt_module.REFNAME]:
-                logging.debug("Cite-key already exists: {}".format(new_entry_args["refname"]))
+            refname_exists_in = self.query_exists(bibfmt_module.REFNAME, new_entry_args["refname"])
+            if refname_exists_in is not None:
+                logging.debug("Cite-key already exists in '{}': {}".format(
+                    refname_exists_in.bibfile.name, new_entry_args["refname"]))
+
                 for c in string.ascii_letters:
                     newrefname = new_entry_args["refname"] + c
-                    if newrefname not in self.bibfmt_main.index[bibfmt_module.REFNAME]:
+                    if self.query_exists(bibfmt_module.REFNAME, newrefname) is None:
                         break
                 new_entry_args["refname"] = newrefname
 
