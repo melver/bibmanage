@@ -47,6 +47,17 @@ class SyncCommand:
             bi.build_index(*indices)
             self.bibfmt_efs.append(bi)
 
+        # Sanity check data and warn
+        for idx in indices:
+            main_set = frozenset(self.bibfmt_main.index[idx])
+            for bi in self.bibfmt_efs:
+                duplicate_set = set(bi.index[idx])
+                duplicate_set &= main_set
+
+                if len(duplicate_set) != 0:
+                    logging.warn("Duplicates found in '{}': {} = {}".format(
+                        bi.bibfile.name, idx, duplicate_set))
+
     def walk_path(self):
         for path in self.conf.args.paths:
             if not os.path.isdir(path):
@@ -89,19 +100,19 @@ class SyncCommand:
             duplicate = query_result["file"]
             refname = query_result["refname"]
 
-            logging.warn("Duplicate for '{}' found in: '{}', refname: '{}'".format(
-                path, bi.bibfile.name, refname
-                ))
-
             if not os.path.exists(duplicate) and bi.bibfile.writable():
                 if not self.conf.args.append or not bi.update_in_place(query_filepos,
                         bibfmt_module.FILE, duplicate, path):
-                    logging.warn("File '{}' does not exist anymore, suggested fix: update entry '{}' in '{}' with '{}'.\n".format(
+                    logging.warn("File '{}' missing; suggested fix: update '{}' in '{}' with '{}'".format(
                         duplicate, refname, bi.bibfile.name, path))
                 else:
                     # Could update in-place
-                    logging.info("Updated entry for '{}'.".format(
-                                refname))
+                    logging.info("Updated entry for '{}' with '{}'".format(
+                                refname, path))
+            else:
+                logging.warn("Duplicate for '{}' found in '{}': refname = '{}'".format(
+                    path, bi.bibfile.name, refname
+                    ))
 
         return found
 
@@ -144,7 +155,7 @@ class SyncCommand:
 
                 # Before we proceed, check if this file is a duplicate of an
                 # already existing file, and if so, check existing entry is
-                # still valid; if not valid replace file otherwise, warn user.
+                # still valid; if not valid replace file, otherwise warn user.
                 if self.check_hash(new_entry_args["md5"], path):
                     continue
 

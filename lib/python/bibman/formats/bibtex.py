@@ -69,7 +69,8 @@ def convert_to_dict(entry_string):
 
         for element in elements:
             key_val = element.split("=")
-            result[key_val[0].strip()] = key_val[1].strip(" \n{}\"")
+            if len(key_val) >= 2:
+                result[key_val[0].strip()] = key_val[1].strip(" \n{}\"")
 
         if logging.getLogger().isEnabledFor(logging.DEBUG):
             pp = pprint.PrettyPrinter(indent=4)
@@ -78,7 +79,8 @@ def convert_to_dict(entry_string):
 
         return result
     except Exception as e:
-        logging.error("(formats/bibtex) convert_to_dict: {}".format(e))
+        logging.error("(formats/bibtex) convert_to_dict(\"\"\"{}\"\"\"): {}".format(
+            entry_string, e))
         return {}
 
 class BibFmt:
