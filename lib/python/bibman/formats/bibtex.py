@@ -94,7 +94,7 @@ class BibFmt:
         self.bibfile.seek(0, 0)
 
         for index in toindex:
-            if self.index.get(index) is None:
+            if index not in self.index:
                 self.index[index] = {}
 
         valid_entry = False
@@ -117,7 +117,7 @@ class BibFmt:
                     comma = line.index(",")
 
                     refname = line[braces+1:comma]
-                    if self.index[REFNAME].get(refname) is None:
+                    if refname not in self.index[REFNAME]:
                         self.index[REFNAME][refname] = [last_entry_pos]
                     else:
                         self.index[REFNAME][refname].append(last_entry_pos)
@@ -137,7 +137,7 @@ class BibFmt:
                         # between proper parser and speed.
                         keywords = line.split("=")[1].strip(" ,{}").split(",")
                         for keyword in keywords:
-                            if self.index[KEYWORDS].get(keyword) is None:
+                            if keyword not in self.index[KEYWORDS]:
                                 self.index[KEYWORDS][keyword] = [last_entry_pos]
                             else:
                                 self.index[KEYWORDS][keyword].append(last_entry_pos)
