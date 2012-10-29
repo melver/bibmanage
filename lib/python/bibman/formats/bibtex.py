@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+#
+# Copyright (C) 2012, Marco Elver <me AT marcoelver.com>
+#
 # This file is part of Bibman.
 #
 # Bibman is free software: you can redistribute it and/or modify
@@ -14,6 +17,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bibman.  If not, see <http://www.gnu.org/licenses/>.
+#
 
 ##
 # @file bibman/formats/bibtex.py
