@@ -39,8 +39,8 @@ FILE     = "file"
 HASH     = "md5"
 REFNAME  = "refname"
 
-# The '.' after closing '}', is a simple way to enable folding in your
-# favorite editor. Folding tags would be '@,}.' .
+# The '   ' after closing '}', is a simple way to enable folding in your
+# favorite editor. For VIM that would be: foldmarker=@,}\ \ \ 
 TEMPLATE_PLAIN = Template("""@${reftype}{${refname},
   author = {${author}},
   title = {${title}},
@@ -49,7 +49,7 @@ TEMPLATE_PLAIN = Template("""@${reftype}{${refname},
   file = {${file}},${extra_bottom}
   annotation = {{${annotation}}},
   date-added = {${date_added}}
-}.
+}   
 """)
 
 TEMPLATE_TOP_ALLOW = ["journal", "number", "pages", "publisher", "volume"]
