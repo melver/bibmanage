@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Copyright (C) 2012, Marco Elver <me AT marcoelver.com>
+# Copyright (C) 2012-2013, Marco Elver <me AT marcoelver.com>
 #
 # This file is part of Bibman.
 #
@@ -21,10 +21,9 @@
 
 ##
 # @file bibman/bibfetch/frontend.py
-# TODO: Add description here.
+# Bibfetch frontent, calling all backends until one succeeds.
 #
 # @author Marco Elver <me AT marcoelver.com>
-# @date Fri Mar  9 20:47:50 GMT 2012
 
 import subprocess
 import os

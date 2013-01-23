@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Copyright (C) 2012, Marco Elver <me AT marcoelver.com>
+# Copyright (C) 2012-2013, Marco Elver <me AT marcoelver.com>
 #
 # This file is part of Bibman.
 #
@@ -21,10 +21,9 @@
 
 ##
 # @file bibman/commands/sync.py
-# TODO: Add description here.
+# Sync command.
 #
 # @author Marco Elver <me AT marcoelver.com>
-# @date Thu Mar  8 19:05:57 GMT 2012
 
 import logging
 import os
@@ -245,6 +244,6 @@ def register_args(parser):
             help="Enable remote fetching of bibliography entries.")
     parser.add_argument("--rename", action="store_true",
             dest="rename", default=False,
-            help="Only valid with --interactive: rename file to be more descriptive.")
+            help="Rename file to be more descriptive; only valid with --interactive.")
     parser.set_defaults(func=main)
 

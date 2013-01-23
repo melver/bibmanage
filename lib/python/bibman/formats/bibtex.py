@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Copyright (C) 2012, Marco Elver <me AT marcoelver.com>
+# Copyright (C) 2012-2013, Marco Elver <me AT marcoelver.com>
 #
 # This file is part of Bibman.
 #
@@ -26,7 +26,6 @@
 # implementation is sufficient.
 #
 # @author Marco Elver <me AT marcoelver.com>
-# @date Thu Mar  8 22:34:37 GMT 2012
 
 # TODO: Use proper BibTeX parser for this?
 
@@ -41,6 +40,8 @@ REFNAME  = "refname"
 
 # The '   ' after closing '}', is a simple way to enable folding in your
 # favorite editor. For VIM that would be: foldmarker=@,}\ \ \ 
+ENTRY_CLOSE = ["}   \n", "}\n"]
+
 TEMPLATE_PLAIN = Template("""@${reftype}{${refname},
   author = {${author}},
   title = {${title}},
@@ -49,8 +50,7 @@ TEMPLATE_PLAIN = Template("""@${reftype}{${refname},
   file = {${file}},${extra_bottom}
   annotation = {{${annotation}}},
   date-added = {${date_added}}
-}   
-""")
+""" + ENTRY_CLOSE[0])
 
 TEMPLATE_TOP_ALLOW = ["journal", "number", "pages", "publisher", "volume"]
 TEMPLATE_BOTTOM_ALLOW = ["md5"]
@@ -128,7 +128,7 @@ class BibFmt:
                         logging.warn("Duplicate cite-key found in {}: {}".format(
                             self.bibfile.name, refname))
 
-            elif line == "}.\n" or line == "}\n":
+            elif line in ENTRY_CLOSE:
                 valid_entry = False
 
             # now strip it
@@ -174,7 +174,7 @@ class BibFmt:
 
             result.append(line)
 
-            if line == "}.\n" or line == "}\n":
+            if line in ENTRY_CLOSE:
                 break
 
         return "".join(result)
@@ -189,7 +189,7 @@ class BibFmt:
 
             entry_lines.append(line.strip())
 
-            if line == "}.\n" or line == "}\n": break
+            if line in ENTRY_CLOSE: break
 
         return convert_to_dict("".join(entry_lines))
 
@@ -236,7 +236,7 @@ class BibFmt:
             start_line_pos = self.bibfile.tell()
             line = self.bibfile.readline()
             if len(line) == 0: break
-            if line == "}.\n" or line == "}\n": break
+            if line in ENTRY_CLOSE: break
 
             strip_line = line.strip()
             if key == FILE:

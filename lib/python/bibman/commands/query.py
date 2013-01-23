@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Copyright (C) 2012, Marco Elver <me AT marcoelver.com>
+# Copyright (C) 2012-2013, Marco Elver <me AT marcoelver.com>
 #
 # This file is part of Bibman.
 #
@@ -21,10 +21,9 @@
 
 ##
 # @file bibman/commands/query.py
-# TODO: Add description here.
+# Query command.
 #
 # @author Marco Elver <me AT marcoelver.com>
-# @date Thu Mar  8 19:05:57 GMT 2012
 
 import logging
 import os
@@ -96,7 +95,7 @@ def register_args(parser):
             help="Index to query. [Default:keywords]")
     parser.add_argument(type=str,
             dest="value", nargs="+",
-            help="Query value. 'Or' semantics for space separated arguments, 'and' semantics with ',' within one argument.")
+            help="Query value; 'or' semantics for multiple arguments, 'and' semantics with ',' within one argument.")
     parser.add_argument("-c", "--copy", metavar="PATH", type=str,
             dest="copy", default=None,
             help="Copy associated files to PATH.")

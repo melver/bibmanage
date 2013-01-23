@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Copyright (C) 2012, Marco Elver <me AT marcoelver.com>
+# Copyright (C) 2012-2013, Marco Elver <me AT marcoelver.com>
 #
 # This file is part of Bibman.
 #
@@ -24,7 +24,6 @@
 # Bibliography manager main file.
 #
 # @author Marco Elver <me AT marcoelver.com>
-# @date Mon Feb  6 18:28:43 GMT 2012
 
 import sys
 import argparse

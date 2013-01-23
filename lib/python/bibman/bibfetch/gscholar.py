@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 
 #
-# Copyright (C) 2012, Marco Elver <me AT marcoelver.com>
+# gscholar - Get bibtex entries from Google Scholar
+#  [https://github.com/venthur/gscholar]
+#
+# Copyright (C) 2011  Bastian Venthur <venthur at debian org>
+# Copyright (C) 2012-2013, Marco Elver <me AT marcoelver.com>
 #
 # This file is part of Bibman.
 #
@@ -18,13 +22,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Bibman.  If not, see <http://www.gnu.org/licenses/>.
 #
-
-##
-# @file bibman/bibfetch/gscholar.py
-#   ** Based on: https://github.com/venthur/gscholar **
-#
-# @author Marco Elver <me AT marcoelver.com>
-# @date Fri Mar  9 20:47:50 GMT 2012
 
 import urllib.request, urllib.error, urllib.parse
 import re
