@@ -25,15 +25,16 @@
 #
 # @author Marco Elver <me AT marcoelver.com>
 
-import logging
+import sys
 import os
+import logging
 import shutil
 
 from bibman.util import gen_filename_from_bib
 
 def main(conf):
     bibfmt_module = conf.bibfmt_module
-    AVAIL_INDICES = [bibfmt_module.KEYWORDS]
+    AVAIL_INDICES = [bibfmt_module.KEYWORDS, bibfmt_module.CITEKEY]
 
     if not conf.args.index in AVAIL_INDICES:
         logging.critical("Not a valid choice: {}. Available options are: {}".format(conf.args.index,
@@ -50,49 +51,53 @@ def main(conf):
         bibfmt = bibfmt_module.BibFmt(bibfile)
         bibfmt.build_index(conf.args.index)
 
-        if conf.args.index == bibfmt_module.KEYWORDS:
-            # Perform query
-            query_result = set()
-            for value_or in conf.args.value:
-                last_result = None
-                for value_and in value_or.split(","):
-                    this_result = bibfmt.query(conf.args.index, value_and) or []
-                    if last_result is None:
-                        last_result = set(this_result)
+        if conf.args.value[0] != "-":
+            values = (x for x in conf.args.value)
+        else:
+            values = (x.strip() for x in sys.stdin)
+
+        # Perform query
+        query_result = set()
+        for value_or in values:
+            last_result = None
+            for value_and in value_or.split(","):
+                this_result = bibfmt.query(conf.args.index, value_and) or []
+                if last_result is None:
+                    last_result = set(this_result)
+                else:
+                    last_result &= frozenset(this_result)
+            query_result |= last_result
+
+        # Show results
+        if len(query_result) == 0:
+            logging.info("No matches.")
+        else:
+            for filepos in query_result:
+                if conf.args.copy is not None:
+                    if not os.path.isdir(conf.args.copy):
+                        logging.critical("Not a valid path: {}".format(conf.args.copy))
+                        return 1
+
+                    querydict = bibfmt.read_entry_dict(filepos)
+                    filepath = querydict["file"]
+
+                    if conf.args.rename:
+                        destpath = os.path.join(conf.args.copy,
+                                gen_filename_from_bib(querydict))
                     else:
-                        last_result &= frozenset(this_result)
-                query_result |= last_result
+                        destpath = conf.args.copy
 
-            # Show results
-            if len(query_result) == 0:
-                logging.info("No matches.")
-            else:
-                for filepos in query_result:
-                    if conf.args.copy is not None:
-                        if not os.path.isdir(conf.args.copy):
-                            logging.critical("Not a valid path: {}".format(conf.args.copy))
-                            return 1
-
-                        querydict = bibfmt.read_entry_dict(filepos)
-                        filepath = querydict["file"]
-
-                        if conf.args.rename:
-                            destpath = os.path.join(conf.args.copy,
-                                    gen_filename_from_bib(querydict))
-                        else:
-                            destpath = conf.args.copy
-
-                        logging.info("Copying: '{}' to '{}'".format(filepath, destpath))
-                        shutil.copy(os.path.expanduser(filepath), destpath)
-                    else:
-                        print(bibfmt.read_entry_raw(filepos))
+                    logging.info("Copying: '{}' to '{}'".format(filepath, destpath))
+                    shutil.copy(os.path.expanduser(filepath), destpath)
+                else:
+                    print(bibfmt.read_entry_raw(filepos))
     finally:
         bibfile.close()
 
 def register_args(parser):
     parser.add_argument("-i", "--index", type=str,
-            dest="index", default="keywords",
-            help="Index to query. [Default:keywords]")
+            dest="index", default="citekey",
+            help="Index to query. [Default:citekey]")
     parser.add_argument(type=str,
             dest="value", nargs="+",
             help="Query value; 'or' semantics for multiple arguments, 'and' semantics with ',' within one argument.")

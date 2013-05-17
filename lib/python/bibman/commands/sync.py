@@ -38,7 +38,7 @@ class SyncCommand:
         self.conf = conf
         self.bibfmt_main = bibfmt_module.BibFmt(bibfile)
 
-        indices = [bibfmt_module.FILE, bibfmt_module.REFNAME]
+        indices = [bibfmt_module.FILE, bibfmt_module.CITEKEY]
         if self.conf.args.hash:
             indices.append(bibfmt_module.HASH)
 
@@ -101,20 +101,20 @@ class SyncCommand:
             query_filepos = bi.query(bibfmt_module.HASH, digest)
             query_result = bi.read_entry_dict(query_filepos)
             duplicate = query_result["file"]
-            refname = query_result["refname"]
+            citekey = query_result["citekey"]
 
             if not os.path.exists(duplicate) and bi.bibfile.writable():
                 if not self.conf.args.append or not bi.update_in_place(query_filepos,
                         bibfmt_module.FILE, duplicate, path):
                     logging.warn("File '{}' missing; suggested fix: update '{}' in '{}' with '{}'".format(
-                        duplicate, refname, bi.bibfile.name, path))
+                        duplicate, citekey, bi.bibfile.name, path))
                 else:
                     # Could update in-place
                     logging.info("Updated entry for '{}' with '{}'".format(
-                                refname, path))
+                                citekey, path))
             else:
-                logging.warn("Duplicate for '{}' found in '{}': refname = '{}'".format(
-                    path, bi.bibfile.name, refname
+                logging.warn("Duplicate for '{}' found in '{}': citekey = '{}'".format(
+                    path, bi.bibfile.name, citekey
                     ))
 
         return found
@@ -143,7 +143,7 @@ class SyncCommand:
             # Generate new entry
             new_entry_args = dict(
                     reftype="misc",
-                    refname="TODO:{}".format(os.path.basename(path)),
+                    citekey="TODO:{}".format(os.path.basename(path)),
                     author="",
                     title="",
                     year="",
@@ -178,16 +178,16 @@ class SyncCommand:
                 path = newpath
 
             # Before we add the new entry, check for duplicate cite-keys
-            refname_exists_in = self.query_exists(bibfmt_module.REFNAME, new_entry_args["refname"])
-            if refname_exists_in is not None:
+            citekey_exists_in = self.query_exists(bibfmt_module.CITEKEY, new_entry_args["citekey"])
+            if citekey_exists_in is not None:
                 logging.debug("Cite-key already exists in '{}': {}".format(
-                    refname_exists_in.bibfile.name, new_entry_args["refname"]))
+                    citekey_exists_in.bibfile.name, new_entry_args["citekey"]))
 
                 for c in string.ascii_letters:
-                    newrefname = new_entry_args["refname"] + c
-                    if self.query_exists(bibfmt_module.REFNAME, newrefname) is None:
+                    newcitekey = new_entry_args["citekey"] + c
+                    if self.query_exists(bibfmt_module.CITEKEY, newcitekey) is None:
                         break
-                new_entry_args["refname"] = newrefname
+                new_entry_args["citekey"] = newcitekey
 
             # Finally, generate new entry
 

@@ -111,12 +111,12 @@ def remote_fetch(**kwargs):
 
         bibdict = bibtex_format.convert_to_dict(result[choice])
 
-        # Make refname look like this: Author1234
+        # Make citekey look like this: Author1234
         # First check if there are any digits in the string
-        if len(frozenset(string.digits) & frozenset(bibdict["refname"])) != 0:
-            bibdict["refname"] = bibdict["refname"].rstrip(string.ascii_letters)
+        if len(frozenset(string.digits) & frozenset(bibdict["citekey"])) != 0:
+            bibdict["citekey"] = bibdict["citekey"].rstrip(string.ascii_letters)
         # Capitalise first letter
-        bibdict["refname"] = bibdict["refname"].capitalize()
+        bibdict["citekey"] = bibdict["citekey"].capitalize()
 
         return bibdict
     else:

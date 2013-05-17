@@ -36,13 +36,13 @@ import logging
 KEYWORDS = "keywords"
 FILE     = "file"
 HASH     = "md5"
-REFNAME  = "refname"
+CITEKEY  = "citekey"
 
 # The '   ' after closing '}', is a simple way to enable folding in your
 # favorite editor. For VIM that would be: foldmarker=@,}\ \ \ 
 ENTRY_CLOSE = ["}   \n", "}\n"]
 
-TEMPLATE_PLAIN = Template("""@${reftype}{${refname},
+TEMPLATE_PLAIN = Template("""@${reftype}{${citekey},
   author = {${author}},
   title = {${title}},
   year = {${year}},${extra_top}
@@ -64,7 +64,7 @@ def convert_to_dict(entry_string):
 
         result = {}
         result["reftype"] = entry_string[1:braces]
-        result["refname"] = entry_string[braces+1:comma]
+        result["citekey"] = entry_string[braces+1:comma]
 
         entry_string = entry_string[comma+1:].strip(". \n{}")
         elements = entry_string.split("},")
@@ -116,17 +116,17 @@ class BibFmt:
                 valid_entry = True
                 last_entry_pos = line_begin_pos
 
-                if REFNAME in toindex:
+                if CITEKEY in toindex:
                     braces = line.index("{")
                     comma = line.index(",")
 
-                    refname = line[braces+1:comma]
-                    if refname not in self.index[REFNAME]:
-                        self.index[REFNAME][refname] = [last_entry_pos]
+                    citekey = line[braces+1:comma]
+                    if citekey not in self.index[CITEKEY]:
+                        self.index[CITEKEY][citekey] = [last_entry_pos]
                     else:
-                        self.index[REFNAME][refname].append(last_entry_pos)
+                        self.index[CITEKEY][citekey].append(last_entry_pos)
                         logging.warn("Duplicate cite-key found in {}: {}".format(
-                            self.bibfile.name, refname))
+                            self.bibfile.name, citekey))
 
             elif line in ENTRY_CLOSE:
                 valid_entry = False

@@ -49,7 +49,7 @@ def gen_filename_from_bib(bibdict):
     title = bibdict["title"][:35].split(":")[0].replace(" ", "_")
 
     filename = "".join(
-            [bibdict["refname"],
+            [bibdict["citekey"],
             "-",
             title,
             ".",
