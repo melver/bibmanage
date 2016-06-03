@@ -1,29 +1,22 @@
 #!/usr/bin/env python
+#
+# Copyright (c) 2012-2016, Marco Elver <me AT marcoelver.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-#
-# Copyright (C) 2012-2013, Marco Elver <me AT marcoelver.com>
-#
-# This file is part of Bibman.
-#
-# Bibman is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Bibman is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Bibman.  If not, see <http://www.gnu.org/licenses/>.
-#
-
-##
-# @file bibman/main.py
-# Bibliography manager main file.
-#
-# @author Marco Elver <me AT marcoelver.com>
+"""
+Bibliography manager main file.
+"""
 
 import sys
 import argparse
@@ -40,26 +33,25 @@ class BibmanConfig:
     def __init__(self):
         # Global args
         parser = argparse.ArgumentParser(prog="bibman",
-                description="Bibliography manager.")
+                                         description="Bibliography manager.")
         parser.add_argument("--loglevel", metavar="LEVEL", type=str,
-                dest="loglevel", default="INFO",
-                help="Loglevel (DEBUG, INFO, WARNING, ERROR, CRITICAL). [Default:INFO]")
+                           dest="loglevel", default="INFO",
+                           help="Loglevel (DEBUG, INFO, WARNING, ERROR, CRITICAL). [Default:INFO]")
         parser.add_argument("--format", metavar="FORMAT", type=str,
-                dest="format", default="bibtex",
-                help="Bibliography format. [Default:bibtex]")
+                            dest="format", default="bibtex",
+                            help="Bibliography format. [Default:bibtex]")
         parser.add_argument("--fetch-prio", metavar="PRIOLIST", type=str,
-                dest="fetch_prio_list", default=["gscholar"], nargs="+",
-                help="Priority list of fetching engines to use.")
+                            dest="fetch_prio_list", default=[], nargs="+",
+                            help="Priority list of fetching engines to use.")
         parser.add_argument("-b", "--bibfile", metavar="BIBFILE", type=str,
-                dest="bibfile", required=True,
-                help="Bibliograpy file to work with.")
+                            dest="bibfile", required=True,
+                            help="Bibliograpy file to work with.")
 
         # Add subparsers
         subparsers = parser.add_subparsers(
                 title="Commands",
                 description="Available commands to manage bibliography files.",
-                help="Summary"
-                )
+                help="Summary")
 
         parser_sync = subparsers.add_parser("sync", aliases=["s"],
                 help="Synchronise bibliography file with path.")
@@ -75,7 +67,7 @@ class BibmanConfig:
 
         # Get the format module
         self.bibfmt_module = __import__("bibman.formats.{}".format(self.args.format),
-                fromlist=["*"])
+                                        fromlist=["*"])
 
         # Setup the remote fetching engine
         self.bibfetch = bibfetch_frontend.Frontend(self.args)

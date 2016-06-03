@@ -1,13 +1,9 @@
 #!/usr/bin/env bash
 #
 # bin/bibman: Wrapper for main program.
-#
-# Author: Marco Elver <me AT marcoelver.com>
 
 BIBMAN_ROOT="$(cd `dirname $0`/.. && pwd)"
 PYTHONPATH="${PYTHONPATH}:${BIBMAN_ROOT}/lib/python"
-
 export PYTHONPATH
 
 exec "${BIBMAN_ROOT}/lib/python/bibman/main.py" "$@"
-

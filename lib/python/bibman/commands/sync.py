@@ -1,29 +1,20 @@
-#!/usr/bin/env python
+# Copyright (c) 2012-2016, Marco Elver <me AT marcoelver.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-#
-# Copyright (C) 2012-2013, Marco Elver <me AT marcoelver.com>
-#
-# This file is part of Bibman.
-#
-# Bibman is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Bibman is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Bibman.  If not, see <http://www.gnu.org/licenses/>.
-#
-
-##
-# @file bibman/commands/sync.py
-# Sync command.
-#
-# @author Marco Elver <me AT marcoelver.com>
+"""
+Sync command.
+"""
 
 import logging
 import os
@@ -58,7 +49,7 @@ class SyncCommand:
                 duplicate_set &= main_set
 
                 if len(duplicate_set) != 0:
-                    logging.warn("Duplicates found in '{}': {} = {}".format(
+                    logging.warning("Duplicates found in '{}': {} = {}".format(
                         bi.bibfile.name, idx, duplicate_set))
 
     def walk_path(self):
@@ -69,7 +60,7 @@ class SyncCommand:
 
             for root, dirs, files in os.walk(path):
                 for f in files:
-                    fullpath = os.path.abspath(os.path.join(root,f))
+                    fullpath = os.path.abspath(os.path.join(root, f))
                     if fullpath.startswith(os.environ['HOME']):
                         fullpath = fullpath.replace(os.environ['HOME'], "~", 1)
 
@@ -106,16 +97,15 @@ class SyncCommand:
             if not os.path.exists(duplicate) and bi.bibfile.writable():
                 if not self.conf.args.append or not bi.update_in_place(query_filepos,
                         bibfmt_module.FILE, duplicate, path):
-                    logging.warn("File '{}' missing; suggested fix: update '{}' in '{}' with '{}'".format(
+                    logging.warning("File '{}' missing; suggested fix: update '{}' in '{}' with '{}'".format(
                         duplicate, citekey, bi.bibfile.name, path))
                 else:
                     # Could update in-place
                     logging.info("Updated entry for '{}' with '{}'".format(
-                                citekey, path))
+                        citekey, path))
             else:
-                logging.warn("Duplicate for '{}' found in '{}': citekey = '{}'".format(
-                    path, bi.bibfile.name, citekey
-                    ))
+                logging.warning("Duplicate for '{}' found in '{}': citekey = '{}'".format(
+                    path, bi.bibfile.name, citekey))
 
         return found
 
@@ -178,7 +168,8 @@ class SyncCommand:
                 path = newpath
 
             # Before we add the new entry, check for duplicate cite-keys
-            citekey_exists_in = self.query_exists(bibfmt_module.CITEKEY, new_entry_args["citekey"])
+            citekey_exists_in = self.query_exists(bibfmt_module.CITEKEY,
+                                                  new_entry_args["citekey"])
             if citekey_exists_in is not None:
                 logging.debug("Cite-key already exists in '{}': {}".format(
                     citekey_exists_in.bibfile.name, new_entry_args["citekey"]))
