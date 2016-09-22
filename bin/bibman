@@ -3,7 +3,7 @@
 # bin/bibman: Wrapper for main program.
 
 BIBMAN_ROOT="$(cd `dirname $0`/.. && pwd)"
-PYTHONPATH="${PYTHONPATH}:${BIBMAN_ROOT}/lib/python"
+PYTHONPATH="${PYTHONPATH}:${BIBMAN_ROOT}/lib/python:${BIBMAN_ROOT}/third_party/bottle"
 export PYTHONPATH
 
 exec "${BIBMAN_ROOT}/lib/python/bibman/main.py" "$@"

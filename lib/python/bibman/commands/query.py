@@ -23,6 +23,21 @@ import shutil
 
 from bibman.util import gen_filename_from_bib
 
+def andor_query(bibfmt, index, values, andsep=','):
+    query_result = set()
+
+    for value_or in values:
+        last_result = None
+        for value_and in value_or.split(andsep):
+            this_result = bibfmt.query(index, value_and) or []
+            if last_result is None:
+                last_result = set(this_result)
+            else:
+                last_result &= frozenset(this_result)
+        query_result |= last_result
+
+    return query_result
+
 def main(conf):
     bibfmt_module = conf.bibfmt_module
     AVAIL_INDICES = [bibfmt_module.KEYWORDS, bibfmt_module.CITEKEY]
@@ -48,22 +63,13 @@ def main(conf):
             values = (x.strip() for x in sys.stdin)
 
         # Perform query
-        query_result = set()
-        for value_or in values:
-            last_result = None
-            for value_and in value_or.split(","):
-                this_result = bibfmt.query(conf.args.index, value_and) or []
-                if last_result is None:
-                    last_result = set(this_result)
-                else:
-                    last_result &= frozenset(this_result)
-            query_result |= last_result
+        query_result = andor_query(bibfmt, conf.args.index, values)
 
         # Show results
         if len(query_result) == 0:
             logging.info("No matches.")
         else:
-            for filepos in query_result:
+            for filepos in sorted(query_result):
                 if conf.args.copy is not None:
                     if not os.path.isdir(conf.args.copy):
                         logging.critical("Not a valid path: {}".format(conf.args.copy))

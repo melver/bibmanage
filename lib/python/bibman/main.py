@@ -24,7 +24,7 @@ import time
 import logging
 
 from bibman.bibfetch import frontend as bibfetch_frontend
-from bibman.commands import sync, query
+from bibman.commands import sync, query, webserve
 
 class BibmanConfig:
     """
@@ -60,6 +60,10 @@ class BibmanConfig:
         parser_query = subparsers.add_parser("query", aliases=["q"],
                 help="Query bibliography file.")
         query.register_args(parser_query)
+
+        parser_webserve = subparsers.add_parser("webserve", aliases=["w"],
+                help="Webserver for bibliography file.")
+        webserve.register_args(parser_webserve)
 
         # Parse args and setup logging
         self.args = parser.parse_args()

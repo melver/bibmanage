@@ -37,7 +37,7 @@ def gen_hash_md5(path):
 def gen_filename_from_bib(bibdict):
     # If the title has a : in it, I assume it's in the TITLE:MOREDESCRIPTIVETITLE format.
     # We can exploit this to get a shorter filename.
-    title = bibdict["title"][:35].split(":")[0].replace(" ", "_")
+    title = bibdict["title"][:50].split(":")[0].replace(" ", "_")
 
     filename = "".join(
             [bibdict["citekey"],
