@@ -51,21 +51,34 @@ def process_filepos(filepos):
     raw = bibfmt.read_entry_raw(filepos)
     lines = []
 
+    def re_cite_replace(m):
+        links = []
+        for ck in m.group(1).split(","):
+            ck = ck.strip()
+            links.append("<a href=\"/citekey/{citekey}\">{citekey}</a>".format(citekey=ck))
+        return "\\cite{{{}}}".format(", ".join(links))
+
     # FIXME: Modifying URLs into links only works with BibTeX bibliographies
     # right now.
     for line in raw.split("\n"):
         line = line.strip()
         if line.startswith("@"):
-            html = bottle.template("<a href=\"/file/{{citekey}}/{{dlname}}\">{{line}}</a>",
-                    citekey=querydict['citekey'],
-                    dlname=gen_filename_from_bib(querydict), line=line)
+            if 'file' in querydict:
+                html = bottle.template("<a href=\"/file/{{citekey}}/{{dlname}}\">{{line}}</a>",
+                        citekey=querydict['citekey'],
+                        dlname=gen_filename_from_bib(querydict), line=line)
+            else:
+                html = bottle.template("{{line}}", line=line)
         elif line.startswith("file "):
             continue
         elif line == "}":
             html = bottle.template("{{line}}", line=line)
         elif "http" in line:
             html = bottle.template("&nbsp;&nbsp;{{line}}", line=line)
-            html = re.sub('{(http[^}]*)}', "{<a href=\"\\1\">\\1</a>}", html)
+            html = re.sub("{(http[^}]*)}", "{<a href=\"\\1\">\\1</a>}", html)
+        elif "\\cite{" in line:
+            html = bottle.template("&nbsp;&nbsp;{{line}}", line=line)
+            html = re.sub("\\\\cite{([^}]*)}", re_cite_replace, html)
         else:
             html = bottle.template("&nbsp;&nbsp;{{line}}", line=line)
 
