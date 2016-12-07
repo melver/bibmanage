@@ -75,7 +75,7 @@ def process_filepos(filepos):
             html = bottle.template("{{line}}", line=line)
         elif "http" in line:
             html = bottle.template("&nbsp;&nbsp;{{line}}", line=line)
-            html = re.sub("{(http[^}]*)}", "{<a href=\"\\1\">\\1</a>}", html)
+            html = re.sub("(http[^} ]*)([} ]|$)", "<a href=\"\\1\">\\1</a>\\2", html)
         elif "\\cite{" in line:
             html = bottle.template("&nbsp;&nbsp;{{line}}", line=line)
             html = re.sub("\\\\cite{([^}]*)}", re_cite_replace, html)
