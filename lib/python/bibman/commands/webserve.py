@@ -24,6 +24,20 @@ import re
 from bibman.util import gen_filename_from_bib
 from bibman.commands.query import andor_query
 
+DEFAULT_REPONSE_HTML = """<html>
+<head>
+<title>{{title}}</title>
+<style>
+body {
+  font-family: monospace;
+}
+</style>
+</head>
+% for line in lines:
+    {{!line}}<br>
+% end
+</html>"""
+
 @bottle.route("/file/<citekey>/<dlname>")
 def index(citekey, dlname):
     query_result = bibfmt.query('citekey', citekey)
@@ -98,12 +112,9 @@ def index(citekey):
 
     lines = process_filepos(query_result[0])
 
-    return bottle.template("""<html>
-<head><title>{{title}}</title></head>
-% for line in lines:
-    {{!line}}<br>
-% end
-</html>""", title="{} @ {}".format(bibfile.name, citekey), lines=lines)
+    return bottle.template(DEFAULT_REPONSE_HTML,
+                           title="{} @ {}".format(bibfile.name, citekey),
+                           lines=lines)
 
 @bottle.route("/keywords/<keywords>")
 def index(keywords):
@@ -116,12 +127,9 @@ def index(keywords):
     for filepos in sorted(query_result, reverse=True):
         lines += process_filepos(filepos)
 
-    return bottle.template("""<html>
-<head><title>{{title}}</title></head>
-% for line in lines:
-    {{!line}}<br>
-% end
-</html>""", title="{} @ {}".format(bibfile.name, keywords), lines=lines)
+    return bottle.template(DEFAULT_REPONSE_HTML,
+                           title="{} @ {}".format(bibfile.name, keywords),
+                           lines=lines)
 
 def main(conf):
     global bibfmt_module
