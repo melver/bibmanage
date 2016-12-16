@@ -75,7 +75,15 @@ def process_filepos(filepos):
     # FIXME: Modifying URLs into links only works with BibTeX bibliographies
     # right now.
     for line in raw.split("\n"):
+        # Get indenting spaces
+        html_whitespace = []
+        for i in range(len(line)):
+            if line[i] != " ": break
+            html_whitespace.append("&nbsp;")
+        html_whitespace = "".join(html_whitespace)
+
         line = line.strip()
+
         if line.startswith("@"):
             if 'file' in querydict:
                 html = bottle.template("<a href=\"/file/{{citekey}}/{{dlname}}\">{{line}}</a>",
@@ -88,15 +96,15 @@ def process_filepos(filepos):
         elif line == "}":
             html = bottle.template("{{line}}", line=line)
         elif "http" in line:
-            html = bottle.template("&nbsp;&nbsp;{{line}}", line=line)
+            html = bottle.template("{{line}}", line=line)
             html = re.sub("(http[^} ]*)([} ]|$)", "<a href=\"\\1\">\\1</a>\\2", html)
         elif "\\cite{" in line:
-            html = bottle.template("&nbsp;&nbsp;{{line}}", line=line)
+            html = bottle.template("{{line}}", line=line)
             html = re.sub("\\\\cite{([^}]*)}", re_cite_replace, html)
         else:
-            html = bottle.template("&nbsp;&nbsp;{{line}}", line=line)
+            html = bottle.template("{{line}}", line=line)
 
-        lines.append(html)
+        lines.append(html_whitespace + html)
 
     return lines
 
