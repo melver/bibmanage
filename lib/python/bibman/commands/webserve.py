@@ -155,7 +155,13 @@ def main(conf):
         bibfmt = bibfmt_module.BibFmt(bibfile)
         bibfmt.build_index('citekey', 'keywords')
 
-        host, port = conf.args.listen.split(":")
+        if conf.args.listen.startswith('['):
+            # IPv6
+            listen = conf.args.listen.split("]:")
+            host = listen[0][1:]
+            port = listen[1]
+        else:
+            host, port = conf.args.listen.split(":")
         bottle.run(host=host, port=port)
     finally:
         bibfile.close()
