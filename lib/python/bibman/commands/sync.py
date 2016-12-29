@@ -109,6 +109,16 @@ class SyncCommand:
 
         return found
 
+    def verify_hash(self, path):
+        # Only verify entries in main.
+        query_filepos = self.bibfmt_main.query(bibfmt_module.FILE, path)
+        if query_filepos is None: return  # not in main
+        query_result = self.bibfmt_main.read_entry_dict(query_filepos)
+        digest = gen_hash_md5(os.path.expanduser(path)).hexdigest()
+        if digest != query_result["md5"]:
+            logging.warn("MD5 checksum mismatch: {} ({} != {})".format(
+                path, digest, query_result["md5"]))
+
     def interactive_corrections(self, new_entry_args):
         logging.info("Entering interactive corrections mode. Leave blank for default.")
         self.bibfmt_main.print_new_entry(**new_entry_args)
@@ -128,7 +138,9 @@ class SyncCommand:
     def __call__(self):
         for path in self.walk_path():
             # Check existing entries
-            if self.query_exists(bibfmt_module.FILE, path) is not None: continue
+            if self.query_exists(bibfmt_module.FILE, path) is not None:
+                if self.conf.args.verify: self.verify_hash(path)
+                continue
 
             # Generate new entry
             new_entry_args = dict(
@@ -236,5 +248,8 @@ def register_args(parser):
     parser.add_argument("--rename", action="store_true",
             dest="rename", default=False,
             help="Rename file to be more descriptive; only valid with --interactive.")
+    parser.add_argument("--verify", action="store_true",
+            dest="verify", default=False,
+            help="Verify checksum of all existing entries.")
     parser.set_defaults(func=main)
 
